@@ -6,7 +6,7 @@ import { download, get, HttpHeaders } from "./http";
 
 export class ChunksDownloader {
     private queue: PQueue;
-    private lastSegment?: string;
+    private lastSegment?: m3u8.ManifestSegment;
 
     private resolve?: () => void;
     private reject?: () => void;
@@ -40,15 +40,14 @@ export class ChunksDownloader {
         const playlist = await this.loadPlaylist();
 
         const interval = playlist.targetDuration || this.playlistRefreshInterval;
-        const segments = playlist.segments!.map((s) => new URL(s.uri, this.playlistUrl).href);
-
+        const segments = playlist.segments!;
         this.refreshHandle = setTimeout(() => this.refreshPlayList(), interval * 1000);
 
-        let toLoad: string[] = [];
+        let toLoad: m3u8.ManifestSegment[] = [];
         if (!this.lastSegment) {
             toLoad = segments.slice(segments.length - this.fromEnd);
         } else {
-            const index = segments.indexOf(this.lastSegment);
+            const index = segments.findIndex(segment => segment.uri == this.lastSegment?.uri);
             if (index < 0) {
                 console.error("Could not find last segment in playlist");
                 toLoad = segments;
@@ -61,9 +60,9 @@ export class ChunksDownloader {
         }
 
         this.lastSegment = toLoad[toLoad.length - 1];
-        for (const uri of toLoad) {
-            console.log("Queued:", uri);
-            this.queue.add(() => this.downloadSegment(uri));
+        for (const segment of toLoad) {
+            console.log("Queued:", segment.uri);
+            this.queue.add(() => this.downloadSegment(segment));
         }
 
         // Timeout after X seconds without new segment
@@ -91,15 +90,15 @@ export class ChunksDownloader {
         return parser.manifest;
     }
 
-    private async downloadSegment(segmentUrl: string): Promise<void> {
+    private async downloadSegment(segment: m3u8.ManifestSegment): Promise<void> {
         // Get filename from URL
-        const question = segmentUrl.indexOf("?");
-        let filename = question > 0 ? segmentUrl.substr(0, question) : segmentUrl;
+        const segmentUrl = new URL(segment.uri, this.playlistUrl);
+        let filename = segmentUrl.pathname;
         const slash = filename.lastIndexOf("/");
         filename = filename.substr(slash + 1);
 
         // Download file
-        await download(segmentUrl, path.join(this.segmentDirectory, filename), this.httpHeaders);
+        await download(segmentUrl.href, path.join(this.segmentDirectory, filename), this.httpHeaders);
         console.log("Received:", segmentUrl);
     }
 }
