@@ -41,11 +41,17 @@ export class ChunksDownloader {
 
         const interval = playlist.targetDuration || this.playlistRefreshInterval;
         const segments = playlist.segments!;
-        this.refreshHandle = setTimeout(() => this.refreshPlayList(), interval * 1000);
+        if (!playlist.endList) {
+            this.refreshHandle = setTimeout(() => this.refreshPlayList(), interval * 1000);
+        }
 
         let toLoad: m3u8.ManifestSegment[] = [];
         if (!this.lastSegment) {
-            toLoad = segments.slice(segments.length - this.fromEnd);
+            if (playlist.endList) {
+                toLoad = segments;
+            } else {
+                toLoad = segments.slice(segments.length - this.fromEnd);
+            }
         } else {
             const index = segments.findIndex(segment => segment.uri == this.lastSegment?.uri);
             if (index < 0) {
@@ -65,11 +71,22 @@ export class ChunksDownloader {
             this.queue.add(() => this.downloadSegment(segment));
         }
 
-        // Timeout after X seconds without new segment
-        if (this.timeoutHandle) {
-            clearTimeout(this.timeoutHandle);
+        // Timeout after X seconds without new segment if we still expect more
+        if (!playlist.endList) {
+            if (this.timeoutHandle) {
+                clearTimeout(this.timeoutHandle);
+            }
+            this.timeoutHandle = setTimeout(() => this.timeout(), this.timeoutDuration * 1000);
+        } else {
+            // Otherwise, we are done when the last task in the queue is processed
+            if (this.timeoutHandle) {
+                clearTimeout(this.timeoutHandle);
+            }
+            if (this.refreshHandle) {
+                clearTimeout(this.refreshHandle);
+            }
+            this.queue.onIdle().then(this.resolve);
         }
-        this.timeoutHandle = setTimeout(() => this.timeout(), this.timeoutDuration * 1000);
     }
 
     private timeout(): void {

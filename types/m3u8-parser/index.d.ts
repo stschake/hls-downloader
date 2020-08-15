@@ -13,6 +13,7 @@ declare module "m3u8-parser" {
         targetDuration?: number;
         segments?: ManifestSegment[];
         playlists?: ManifestPlaylist[];
+        endList: boolean;
     }
 
     export class Parser {
