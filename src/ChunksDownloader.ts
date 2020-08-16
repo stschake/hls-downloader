@@ -1,12 +1,14 @@
 import * as m3u8 from "m3u8-parser";
 import PQueue from "p-queue";
 import * as path from "path";
+import { createDecipheriv } from "crypto";
 import { URL } from "url";
-import { download, get, HttpHeaders } from "./http";
+import { download, get, getBuffer, HttpHeaders } from "./http";
 
 export class ChunksDownloader {
     private queue: PQueue;
     private lastSegment?: m3u8.ManifestSegment;
+    private keys: { [key: string]: Uint8Array };
 
     private resolve?: () => void;
     private reject?: () => void;
@@ -25,6 +27,7 @@ export class ChunksDownloader {
         this.queue = new PQueue({
             concurrency: this.concurrency,
         });
+        this.keys = {};
     }
 
     public start(): Promise<void> {
@@ -114,8 +117,31 @@ export class ChunksDownloader {
         const slash = filename.lastIndexOf("/");
         filename = filename.substr(slash + 1);
 
+        // Check if its encrypted
+        let decryptStream = undefined;
+        if (segment.key) {
+            // Can't handle anything custom
+            if (segment.key.method != "AES-128") {
+                this.reject!();
+                return;
+            }
+
+            // Fetch the key if necessary
+            let key = this.keys[segment.key.uri];
+            if (!key) {
+                const keyUrl = new URL(segment.key.uri, this.playlistUrl);
+                const keyData = await getBuffer(keyUrl.href, this.httpHeaders);
+                key = new Uint8Array(keyData);
+                this.keys[segment.key.uri] = key;
+            }
+
+            // Setup the stream that will do the decryption transparently
+            decryptStream = createDecipheriv("aes-128-cbc", key, segment.key.iv);
+        }
+
         // Download file
-        await download(segmentUrl.href, path.join(this.segmentDirectory, filename), this.httpHeaders);
-        console.log("Received:", segmentUrl);
+        const filePath = path.join(this.segmentDirectory, filename);
+        await download(segmentUrl.href, filePath, this.httpHeaders, decryptStream);
+        console.log("Received:", segmentUrl.href);
     }
 }

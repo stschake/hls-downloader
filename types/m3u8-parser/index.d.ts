@@ -1,6 +1,13 @@
 declare module "m3u8-parser" {
+    interface Key {
+        method: string;
+        uri: string;
+        iv: Uint32Array;
+    }
+
     interface ManifestSegment {
         uri: string;
+        key?: Key;
     }
 
     interface ManifestPlaylist {
