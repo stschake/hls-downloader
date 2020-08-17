@@ -20,9 +20,9 @@ export class ChunksDownloader {
         private concurrency: number,
         private fromEnd: number,
         private segmentDirectory: string,
+        private httpHeaders?: HttpHeaders,
         private timeoutDuration: number = 60,
         private playlistRefreshInterval: number = 5,
-        private httpHeaders?: HttpHeaders,
     ) {
         this.queue = new PQueue({
             concurrency: this.concurrency,

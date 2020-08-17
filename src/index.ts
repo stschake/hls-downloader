@@ -35,9 +35,7 @@ export async function download(config: IConfig): Promise<void> {
         config.concurrency || 1,
         config.fromEnd || 1,
         segmentsDir,
-        undefined,
-        undefined,
-        config.httpHeaders,
+        config.httpHeaders
     );
     await chunksDownloader.start();
 
