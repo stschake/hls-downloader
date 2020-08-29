@@ -22,7 +22,6 @@ export class ArgumentParser {
             .usage("[options] <url>")
             .option("--ffmpeg-merge", "Merge TS segments using FFMPEG", false)
             .option("--segments-dir [dir]", "Where the TS segments will be stored")
-            .option("--merged-segments-file [file]", "Location of the merged TS segments file")
             .option("-c, --concurrency [threads]", "How many threads to use for segments download", parseInt, 1)
             .option("-q, --quality [quality]", "Stream quality when possible (worst, best, or max bandwidth)", "best")
             .option("-o, --output-file [file]", "Target file to download the stream to")
@@ -48,7 +47,6 @@ export class ArgumentParser {
             concurrency: args.concurrency,
             fromEnd: args.fromEnd,
             mergeUsingFfmpeg: args.ffmpegMerge,
-            mergedSegmentsFile: args.mergedSegmentsFile,
             outputFile: args.outputFile,
             quality: args.quality,
             segmentsDir: args.segmentsDir,

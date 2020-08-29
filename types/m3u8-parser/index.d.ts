@@ -16,11 +16,24 @@ declare module "m3u8-parser" {
         timeline: number;
     }
 
+    interface MediaGroup {
+        default: boolean;
+        autoselect: boolean;
+        language: string;
+        uri: string;
+    }
+
+    interface MediaGroups {
+        AUDIO: { [id: string]: { [name: string]: MediaGroup } };
+    }
+
     interface Manifest {
         targetDuration?: number;
         segments?: ManifestSegment[];
         playlists?: ManifestPlaylist[];
         endList: boolean;
+
+        mediaGroups: MediaGroups;
     }
 
     export class Parser {

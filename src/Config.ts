@@ -7,7 +7,6 @@ export interface IConfig {
     quality?: "worst" | "best" | number;
     streamUrl: string;
     segmentsDir?: string;
-    mergedSegmentsFile?: string;
     outputFile: string;
     httpHeaders?: HttpHeaders;
 }

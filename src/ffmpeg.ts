@@ -48,13 +48,10 @@ export async function mergeChunks(segments: string[], outputFile: string): Promi
     fs.unlinkSync(segmentsFile);
 }
 
-export async function transmuxTsToMp4(inputFile: string, outputFile: string): Promise<void> {
-    await spawnFfmpeg([
-        "-y",
-        "-loglevel", "warning",
-        "-i", inputFile,
-        "-c", "copy",
-        "-bsf:a", "aac_adtstoasc",
-        outputFile,
-    ]);
+export async function transmuxTsToMp4(inputFiles: string[], outputFile: string): Promise<void> {
+    const inputParams = inputFiles.flatMap(file => ["-i", file]);
+    const params = ["-y", "-loglevel", "warning"].concat(inputParams)
+        .concat("-c", "copy", "-bsf:a", "aac_adtstoasc", outputFile);  
+
+    await spawnFfmpeg(params);
 }
