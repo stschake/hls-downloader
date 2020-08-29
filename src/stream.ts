@@ -18,6 +18,7 @@ export async function mergeFiles(files: string[], outputFile: string): Promise<v
     });
     for (const file of files) {
         await copyToStream(file, outStream);
+        fs.unlinkSync(file);
     }
     outStream.end();
     return ret;
